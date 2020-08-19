@@ -25,6 +25,7 @@ int main(int n_args, char **args) {
   auto flow_3d = *container_un_qn / resolution; // Impossible to make any projection or rebin even if bins are just cut off
   try{
     flow_3d = flow_3d.Rebin({"Centrality", 1, 20, 25});
+    flow_3d = flow_3d.Rebin({"mdc_vtx_tracks_pT", 1, 1.0, 1.1});
     flow_3d = flow_3d.Projection({"y_cm"});
   } catch (const std::exception& e) {
     std::cout << "main() 27-28 lines catched: " << e.what() << std::endl;
