@@ -1,10 +1,16 @@
 # Export QnTools library to your eviroment:
 ```
-  $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/QnTools/install/lib
+  $ export QnTools_DIR=$LD_LIBRARY_PATH:/path/to/QnTools/install/lib/cmake/QnTools
 ```
-
-# Run the script using 
+# Build the project
 ```
-  $ root -l test.root
+  $ mkdir build
+  $ cd build
+  $ cmake ..
+  $ make -j
+```
+# Run the test using 
+```
+  $ test /path/to/qn_tools_test/au123_fw3_rs_rescale.root
 ```
 The script works with root file inside the repository. It creates the output file named "result.root". 
