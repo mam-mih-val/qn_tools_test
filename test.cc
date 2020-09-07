@@ -44,7 +44,7 @@ int main(int n_args, char **args) {
     std::cout << "Rebin attempt was unsuccessful for flow container: " << e.what() << std::endl;
   }
 
-  // Appearance 2: Rebin of mergeable container seems to be success, but with incorrect result
+  // Appearance 2: Rebin of mergeable container seems to success, but with incorrect result
   Qn::DataContainerStats resolution_rebinned;
   try{
     std::cout << "Trying to rebin resolution container centrality axis, halve bins in same range" << std::endl;
