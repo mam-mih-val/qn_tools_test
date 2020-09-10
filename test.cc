@@ -1,4 +1,5 @@
 #include <DataContainer.hpp>
+#include <StatBin.hpp>
 #include <TFile.h>
 
 int main(int n_args, char **args) {
@@ -27,31 +28,63 @@ int main(int n_args, char **args) {
   file->GetObject("W2_RECENTERED_W3_RECENTERED_Q1x_Q1x",
       container_Qb_Qc); // Reference, single-axis {"Centrality", 8, 0, 40}
 
+  // Copying stats containers to stat bins
+  Qn::DataContainer<Qn::StatBin> stat_bins_un_Qa( *container_un_Qa );
+  Qn::DataContainer<Qn::StatBin> stat_bins_Qa_Qb( *container_Qa_Qb );
+  Qn::DataContainer<Qn::StatBin> stat_bins_Qa_Qc( *container_Qa_Qc );
+  Qn::DataContainer<Qn::StatBin> stat_bins_Qb_Qc( *container_Qb_Qc );
+
   // Resolution calculation with 3-Sub method
-  // All containers in this operation are reference, Sqrt() is unary => result resolution is mergeable
-  auto resolution = Sqrt(*container_Qa_Qb * *container_Qa_Qc / *container_Qb_Qc);
+  auto resolution = Sqrt(stat_bins_Qa_Qb * stat_bins_Qa_Qc / stat_bins_Qb_Qc);
   // Flow calculation
-  // Observable / Reference => result flow is mergeable
-  auto flow = *container_un_Qa / resolution;
+  auto flow = stat_bins_un_Qa / resolution;
 
-  // Appearance 1: Rebin of mergeable container falls with error
-  Qn::DataContainerStats flow_rebinned;
-  try{
-    std::cout << "Trying to rebin flow container centrality axis, halve bins in same range" << std::endl;
-    flow_rebinned = flow.Rebin({"Centrality", 4, 0, 40});
-    std::cout << "Rebin attempt was successful for flow container" << std::endl;
-  } catch (const std::exception& e) {
-    std::cout << "Rebin attempt was unsuccessful for flow container: " << e.what() << std::endl;
-  }
-
-  // Appearance 2: Rebin of mergeable container seems to success, but with incorrect result
-  Qn::DataContainerStats resolution_rebinned;
+  // Checking rebinnig of resolution (1D, Centrality dependence only)
+  Qn::DataContainer<Qn::StatBin> resolution_rebinned;
   try{
     std::cout << "Trying to rebin resolution container centrality axis, halve bins in same range" << std::endl;
     resolution_rebinned = resolution.Rebin({"Centrality", 4, 0.0, 40.0});
     std::cout << "Rebin attempt was successful for resolution container" << std::endl;
+    std::cout << "*************************" << std::endl;
+    std::cout << "initial resoltuion container" << std::endl;
+    int i=0;
+    for( const auto &bin : resolution  ){
+      std::cout << i << ": " << bin.Mean() << " " << bin.Error() << std::endl;
+      ++i;
+    }
+    std::cout << "*************************" << std::endl;
+    std::cout << "resoltuion container calculated with DataContainersStats" << std::endl;
+    auto resolution_stats = Sqrt((*container_Qa_Qb * *container_Qa_Qc)/ *container_Qb_Qc);
+    resolution_stats.SetSetting(Qn::Stats::Settings::CORRELATEDERRORS);
+    i=0;
+    for( const auto &bin : resolution_stats  ){
+      std::cout << i << ": " << bin.Mean() << " " << bin.MeanError() << std::endl;
+      ++i;
+    }
+    std::cout << "*************************" << std::endl;
+    std::cout << "rebinned resoltuion container" << std::endl;
+    i=0;
+    for( const auto &bin : resolution_rebinned  ){
+      std::cout << i << ": " << bin.Mean() << " " << bin.Error() << std::endl;
+      ++i;
+    }
   } catch (const std::exception& e) {
     std::cout << "Rebin attempt was unsuccessful for resolution container: " << e.what() << std::endl;
+  }
+
+  Qn::DataContainer<Qn::StatBin> flow_rebinned;
+  try{
+    std::cout << "Trying to rebin flow container centrality axis, unite bins in same range" << std::endl;
+    flow_rebinned = flow.Rebin({"Centrality", 1, 0.0, 0.40});
+    std::cout << "Rebin attempt was successful for flow container" << std::endl;
+    std::cout << "rebinned flow container" << std::endl;
+    int i=0;
+    for( const auto &bin : flow_rebinned  ){
+      std::cout << i << ": " << bin.Mean() << " " << bin.Error() << std::endl;
+      ++i;
+    }
+  } catch (const std::exception& e) {
+    std::cout << "Rebin attempt was unsuccessful for flow container: " << e.what() << std::endl;
   }
 
   auto file_out = TFile::Open("result.root", "recreate");
@@ -63,10 +96,10 @@ int main(int n_args, char **args) {
   flow_rebinned.Write("flow_rebinned");
 
   // original containers used for flow calculation
-  container_Qa_Qb->Write("<Qa,Qb>");
-  container_Qa_Qc->Write("<Qa,Qc>");
-  container_Qb_Qc->Write("<Qb,Qc>");
-  container_un_Qa->Write("<un,Qa>");
+  stat_bins_Qa_Qb.Write("<Qa,Qb>");
+  stat_bins_Qa_Qc.Write("<Qa,Qc>");
+  stat_bins_Qb_Qc.Write("<Qb,Qc>");
+  stat_bins_un_Qa.Write("<un,Qa>");
 
   file_out->Close();
   return 0;
